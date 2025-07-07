@@ -58,7 +58,7 @@ def generate_humidity_data(num_records=10, output_file=None):
             
             writer.writerow(record)
     
-    print(f"✅ Generados {num_records} registros en: {output_file}")
+    print(f"[OK] Generados {num_records} registros en: {output_file}")
     return output_file
 
 def main():
@@ -72,17 +72,17 @@ def main():
     
     try:
         output_file = generate_humidity_data(args.num_records, args.output)
-        print(f"📊 Archivo generado exitosamente: {output_file}")
+        print(f"[DATOS] Archivo generado exitosamente: {output_file}")
         
         # Mostrar preview de los datos
-        print("\n📋 Preview de los datos generados:")
+        print("\n[PREVIEW] Preview de los datos generados:")
         with open(output_file, 'r', encoding='utf-8') as f:
             lines = f.readlines()
             for i, line in enumerate(lines[:6]):  # Mostrar header + 5 registros
                 print(f"  {line.strip()}")
                 
     except Exception as e:
-        print(f"❌ Error al generar datos: {e}")
+        print(f"[ERROR] Error al generar datos: {e}")
         return 1
     
     return 0

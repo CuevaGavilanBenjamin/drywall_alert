@@ -34,11 +34,11 @@ class ERPClient:
             response.raise_for_status()
             
             health_data = response.json()
-            logger.info(f"✅ Servicio ERP disponible: {health_data['status']}")
+            logger.info(f"[OK] Servicio ERP disponible: {health_data['status']}")
             return True
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Servicio ERP no disponible: {e}")
+            logger.error(f"[ERROR] Servicio ERP no disponible: {e}")
             return False
     
     def upload_file(self, file_path):
@@ -59,7 +59,7 @@ class ERPClient:
             file_size = os.path.getsize(file_path)
             file_name = os.path.basename(file_path)
             
-            logger.info(f"📤 Subiendo archivo: {file_name} ({file_size} bytes)")
+            logger.info(f"[UPLOAD] Subiendo archivo: {file_name} ({file_size} bytes)")
             
             # Subir archivo
             with open(file_path, 'rb') as file:
@@ -72,15 +72,15 @@ class ERPClient:
                 response.raise_for_status()
             
             result = response.json()
-            logger.info(f"✅ Archivo subido exitosamente: {result['saved_as']}")
+            logger.info(f"[OK] Archivo subido exitosamente: {result['saved_as']}")
             
             return result
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Error al subir archivo: {e}")
+            logger.error(f"[ERROR] Error al subir archivo: {e}")
             raise
         except Exception as e:
-            logger.error(f"❌ Error general: {e}")
+            logger.error(f"[ERROR] Error general: {e}")
             raise
     
     def list_files(self):
@@ -95,7 +95,7 @@ class ERPClient:
             return files_data
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Error al obtener lista de archivos: {e}")
+            logger.error(f"[ERROR] Error al obtener lista de archivos: {e}")
             raise
     
     def get_stats(self):
@@ -113,7 +113,7 @@ class ERPClient:
             return stats
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Error al obtener estadísticas: {e}")
+            logger.error(f"[ERROR] Error al obtener estadísticas: {e}")
             raise
 
 def main():
@@ -139,16 +139,16 @@ def main():
         # Subir archivo
         if args.file:
             result = client.upload_file(args.file)
-            print(f"📁 Archivo guardado como: {result['saved_as']}")
-            print(f"🆔 ID del archivo: {result['file_id']}")
+            print(f"[FILE] Archivo guardado como: {result['saved_as']}")
+            print(f"[ID] ID del archivo: {result['file_id']}")
         
         # Listar archivos
         if args.list:
             files_data = client.list_files()
-            print(f"\n📋 Archivos en servidor ({files_data['total_files']}):")
+            print(f"\n[LIST] Archivos en servidor ({files_data['total_files']}):")
             for i, file_info in enumerate(files_data['files'], 1):
-                status_emoji = "✅" if file_info['status'] == 'success' else "❌"
-                print(f"  {i}. {status_emoji} {file_info['original_filename']}")
+                status_text = "OK" if file_info['status'] == 'success' else "ERROR"
+                print(f"  {i}. [{status_text}] {file_info['original_filename']}")
                 print(f"     Guardado como: {file_info['saved_filename']}")
                 print(f"     Tamaño: {file_info['file_size']} bytes")
                 print(f"     Subido: {file_info['upload_timestamp']}")
@@ -160,7 +160,7 @@ def main():
         return 0
         
     except Exception as e:
-        logger.error(f"❌ Error en cliente ERP: {e}")
+        logger.error(f"[ERROR] Error en cliente ERP: {e}")
         return 1
 
 if __name__ == "__main__":

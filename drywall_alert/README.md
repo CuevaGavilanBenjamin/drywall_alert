@@ -2,12 +2,12 @@
 
 ## 📋 Visión General
 
-DryWall Alert es un sistema completo de monitoreo de humedad que simula la recolección de datos de sensores y su transferencia segura a sistemas ERP. El proyecto demuestra la integración entre generación de datos, seguridad SFTP, automatización local y cloud, y servicios web.
+DryWall Alert es un sistema completo de monitoreo de humedad que simula la recolección de datos de sensores, transferencia SFTP local y procesamiento en un ERP tipo BBVA Pivot Connect. El proyecto incluye una API REST con FastAPI para exposición de la funcionalidad.
 
 ## 🎯 Objetivos del Proyecto
 
-- **Funcional**: Crear un pipeline completo de datos desde sensores hasta ERP
-- **Técnico**: Implementar transferencia segura, automatización y monitoreo
+- **Funcional**: Pipeline completo de datos desde sensores hasta ERP
+- **Técnico**: Transferencia local simulada, procesamiento ERP y API REST
 - **Académico**: Demostrar buenas prácticas de desarrollo y documentación
 
 ## 🗂️ Estructura del Proyecto
@@ -15,39 +15,43 @@ DryWall Alert es un sistema completo de monitoreo de humedad que simula la recol
 ```
 drywall_alert/
 ├── 📁 data/                    # Archivos CSV generados
-├── 📁 keys/                    # Claves SSH (NO subir a git)
-├── 📁 upload/                  # Carpeta local "ERP"
+├── 📁 upload/                  # Carpeta de transferencia SFTP
+├── 📁 erp_data/                # Datos procesados por ERP
 ├── 📁 erp_service/             # Servicio ERP con FastAPI
+│   └── main.py                 # API REST principal
 ├── 📁 .github/workflows/       # GitHub Actions
-├── 📁 evidence/                # Capturas y evidencias
-├── 📊 generate_humidity.py     # Generador de datos
-├── 📤 sftp_upload.py          # Cliente SFTP
-├── ⏰ upload_scheduler.py      # Automatización local
+├──  generate_humidity.py     # Generador de datos
+├── 📤 sftp_local_simulator.py  # Simulador SFTP local
+├── 🏦 bbva_pivot_simulator.py  # ERP tipo BBVA Pivot Connect
 ├── 🌐 erp_client.py           # Cliente HTTP para ERP
-├── 🔧 setup.bat               # Configuración inicial
-├── ▶️ run_once.bat            # Ejecución única
+├── 🔧 drywall_complete_fastapi.py # Sistema completo con FastAPI
+├── 🚀 main.py                 # Punto de entrada principal
+├── ⚡ quick_start.bat         # Inicio rápido
+├── 🧹 cleanup.bat             # Limpieza de archivos
 ├── 📋 requirements.txt        # Dependencias Python
 └── 📖 README.md              # Este archivo
 ```
 
-## 🚀 Instalación y Configuración
+## 🚀 Inicio Rápido
 
-### 1. Configuración Inicial
+### 1. Instalación y Ejecución
 
 ```bash
-# Ejecutar configuración automática (Windows)
-setup.bat
+# Inicio rápido (Windows)
+start.bat
 
 # O manualmente:
-python -m venv .venv
-.venv\Scripts\activate
 pip install -r requirements.txt
+python main.py --demo
 ```
 
-### 2. Generar Claves SSH
+### 2. Usar la API REST
 
 ```bash
-# Generar par de claves para SFTP
+# Iniciar solo el servicio FastAPI
+python main.py --start-fastapi
+
+# Acceder a la documentación: http://localhost:8000/docs
 ssh-keygen -t rsa -b 2048 -f keys/id_rsa_drywall -N ""
 
 # Copiar clave pública al servidor

@@ -13,12 +13,12 @@ from pathlib import Path
 import logging
 import json
 
-# Configuración de logging
+# Configuración de logging (compatible con Windows)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('erp_service.log'),
+        logging.FileHandler('erp_service.log', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -94,7 +94,7 @@ async def receive_file(file: UploadFile = File(...)):
         # Agregar a la lista de archivos
         files_metadata.append(metadata)
         
-        logger.info(f"✅ Archivo recibido: {file.filename} -> {final_filename} ({file_size} bytes)")
+        logger.info(f"[OK] Archivo recibido: {file.filename} -> {final_filename} ({file_size} bytes)")
         
         return JSONResponse(
             status_code=200,
@@ -108,7 +108,7 @@ async def receive_file(file: UploadFile = File(...)):
         )
         
     except Exception as e:
-        logger.error(f"❌ Error al recibir archivo: {e}")
+        logger.error(f"[ERROR] Error al recibir archivo: {e}")
         raise HTTPException(status_code=500, detail=f"Error al procesar archivo: {str(e)}")
 
 @app.get("/files")
@@ -139,7 +139,7 @@ async def delete_file(file_id: int):
         
         if file_path.exists():
             file_path.unlink()
-            logger.info(f"🗑️ Archivo eliminado: {metadata['saved_filename']}")
+            logger.info(f"[DELETE] Archivo eliminado: {metadata['saved_filename']}")
         
         # Marcar como eliminado
         metadata["status"] = "deleted"
@@ -148,7 +148,7 @@ async def delete_file(file_id: int):
         return {"message": "Archivo eliminado exitosamente"}
         
     except Exception as e:
-        logger.error(f"❌ Error al eliminar archivo: {e}")
+        logger.error(f"[ERROR] Error al eliminar archivo: {e}")
         raise HTTPException(status_code=500, detail=f"Error al eliminar archivo: {str(e)}")
 
 @app.get("/health")
@@ -178,8 +178,8 @@ async def get_stats():
 if __name__ == "__main__":
     import uvicorn
     
-    logger.info("🚀 Iniciando DryWall Alert ERP Service...")
-    logger.info(f"📁 Directorio de archivos: {UPLOAD_DIR.absolute()}")
+    logger.info("[FASTAPI] Iniciando DryWall Alert ERP Service...")
+    logger.info(f"[UPLOAD] Directorio de archivos: {UPLOAD_DIR.absolute()}")
     
     uvicorn.run(
         app,

@@ -3,15 +3,14 @@
 venv/
 env/
 
-# Claves SSH (¡NUNCA subir!)
-keys/
-*.pem
-*.key
-id_rsa*
-
 # Logs
 *.log
 logs/
+
+# Archivos de datos generados
+data/*.csv
+upload/*.csv
+erp_data/*.json
 
 # Archivos temporales
 *.tmp
@@ -54,6 +53,3 @@ Thumbs.db
 config.ini
 secrets.json
 
-# Archivos temporales de upload
-upload/*.csv
-upload/*.json

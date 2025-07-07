@@ -5,20 +5,15 @@
 ## 📋 Requisitos Previos
 
 - [x] Python 3.8 o superior
-- [x] Git instalado
-- [x] OpenSSH habilitado en Windows
-- [x] Acceso a internet para GitHub Actions
+- [x] Acceso a internet para instalar dependencias
 
 ## 🏁 Configuración en 5 Minutos
 
-### Paso 1: Configuración Inicial
+### Paso 1: Instalar Dependencias
 
 ```bash
-# Ejecutar configuración automática
-setup.bat
-
-# Verificar instalación
-python --version
+# Instalar dependencias
+pip install -r requirements.txt
 ```
 
 ### Paso 2: Primera Prueba
@@ -31,22 +26,18 @@ python generate_humidity.py -n 10 -o data/test.csv
 type data\test.csv
 ```
 
-### Paso 3: Configurar SFTP (Opcional)
-
-```bash
-# Habilitar OpenSSH Server en Windows
-# Configuración -> Aplicaciones -> Características opcionales -> OpenSSH Server
-
-# Configurar claves SSH
-type keys\id_rsa_drywall.pub
-# Copiar esta clave al servidor SFTP
-```
-
-### Paso 4: Iniciar ERP Service
+### Paso 3: Iniciar Servicio ERP
 
 ```bash
 # Terminal 1: Iniciar servicio ERP
 python erp_service/main.py
+```
+
+### Paso 4: Ejecutar Sistema Completo
+
+```bash
+# Terminal 2: Ejecutar sistema completo con FastAPI
+python drywall_complete_fastapi.py --demo
 
 # Terminal 2: Probar cliente ERP
 python erp_client.py --file data/test.csv --list

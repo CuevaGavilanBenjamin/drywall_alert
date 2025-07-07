@@ -1,9 +1,7 @@
 # Dependencias del proyecto DryWall Alert
-paramiko>=2.11.0
+
+# Librerías principales para el sistema completo
 fastapi>=0.104.1
 uvicorn>=0.24.0
-schedule>=1.2.0
 python-multipart>=0.0.6
 requests>=2.31.0
-pandas>=2.0.0
-python-dotenv>=1.0.0
