@@ -1,0 +1,59 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Claves SSH (¡NUNCA subir!)
+keys/
+*.pem
+*.key
+id_rsa*
+
+# Logs
+*.log
+logs/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Datos sensibles
+config.ini
+secrets.json
+
+# Archivos temporales de upload
+upload/*.csv
+upload/*.json
