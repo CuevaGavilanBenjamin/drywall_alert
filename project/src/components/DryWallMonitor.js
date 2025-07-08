@@ -2,17 +2,26 @@ import React, { useState, useEffect } from 'react';
 
 const DryWallMonitor = () => {
   const [dryWallData, setDryWallData] = useState(null);
+  const [sensorData, setSensorData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchDryWallData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/api/drywall/status');
-      if (!response.ok) throw new Error('Error fetching DryWall data');
       
-      const data = await response.json();
-      setDryWallData(data);
+      // Obtener estado del sistema
+      const statusResponse = await fetch('http://localhost:8000/api/drywall/status');
+      if (!statusResponse.ok) throw new Error('Error fetching DryWall status');
+      const statusData = await statusResponse.json();
+      
+      // Obtener datos de sensores procesados
+      const sensorResponse = await fetch('http://localhost:8000/api/drywall/sensor-summary');
+      if (!sensorResponse.ok) throw new Error('Error fetching sensor data');
+      const sensorDataResponse = await sensorResponse.json();
+      
+      setDryWallData(statusData);
+      setSensorData(sensorDataResponse);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -33,7 +42,7 @@ const DryWallMonitor = () => {
     return (
       <div className="p-6 bg-gray-50 rounded-2xl shadow-lg flex-grow">
         <div className="animate-pulse">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6">Monitor DryWall</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">🏗️ Monitor DryWall</h2>
           <div className="h-4 bg-gray-300 rounded w-3/4 mb-4"></div>
           <div className="h-4 bg-gray-300 rounded w-1/2"></div>
         </div>
@@ -44,7 +53,7 @@ const DryWallMonitor = () => {
   if (error) {
     return (
       <div className="p-6 bg-gray-50 rounded-2xl shadow-lg flex-grow">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">Monitor DryWall</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-6">🏗️ Monitor DryWall</h2>
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
           <p className="font-bold">Error de Conexión</p>
           <p>{error}</p>
@@ -62,7 +71,7 @@ const DryWallMonitor = () => {
   return (
     <div className="p-6 bg-gray-50 rounded-2xl shadow-lg flex-grow">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">Monitor DryWall Alert</h2>
+        <h2 className="text-3xl font-bold text-gray-800">🏗️ DryWall Alert - Monitor de Humedad</h2>
         <button 
           onClick={fetchDryWallData}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
@@ -71,120 +80,153 @@ const DryWallMonitor = () => {
         </button>
       </div>
 
-      {/* Estado del Sistema */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Estado del Sistema</h3>
+      {/* Resumen Ejecutivo */}
+      {sensorData && sensorData.summary && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+            <h3 className="text-sm font-semibold text-gray-600 mb-1">SENSORES ACTIVOS</h3>
+            <div className="text-2xl font-bold text-green-600">
+              {sensorData.summary.total_sensors}
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+            <h3 className="text-sm font-semibold text-gray-600 mb-1">LECTURAS TOTALES</h3>
+            <div className="text-2xl font-bold text-blue-600">
+              {sensorData.summary.total_readings}
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
+            <h3 className="text-sm font-semibold text-gray-600 mb-1">HUMEDAD PROMEDIO</h3>
+            <div className="text-2xl font-bold text-orange-600">
+              {sensorData.summary.average_humidity}%
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
+            <h3 className="text-sm font-semibold text-gray-600 mb-1">ALERTAS CRÍTICAS</h3>
+            <div className="text-2xl font-bold text-red-600">
+              {sensorData.summary.critical_alerts}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Estado del Sistema SFTP */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <h3 className="text-lg font-semibold text-gray-700 mb-3">📡 Estado de Conexión</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center">
             <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-            <span className="text-green-600 font-medium">Online</span>
+            <span className="text-green-600 font-medium">SFTP Server Online</span>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
-            SFTP: {dryWallData?.drywall_integration?.sftp_server || 'Unknown'}
-          </p>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Archivos Recibidos</h3>
-          <div className="text-2xl font-bold text-blue-600">
-            {dryWallData?.files_received?.total_count || 0}
-          </div>
-          <p className="text-sm text-gray-500">
-            {(dryWallData?.files_received?.total_size_bytes / 1024 / 1024).toFixed(2) || 0} MB
-          </p>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Última Actualización</h3>
           <div className="text-sm text-gray-600">
-            {new Date(dryWallData?.timestamp).toLocaleString('es-ES') || 'N/A'}
+            <strong>Archivos:</strong> {dryWallData?.files_received?.total_count || 0}
+          </div>
+          <div className="text-sm text-gray-600">
+            <strong>Última actualización:</strong> {new Date(dryWallData?.timestamp || Date.now()).toLocaleTimeString()}
           </div>
         </div>
       </div>
 
-      {/* Lista de Archivos */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 bg-gray-100 border-b">
-          <h3 className="text-lg font-semibold text-gray-800">Archivos de Sensores Recibidos</h3>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Archivo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tamaño
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {dryWallData?.files_received?.files?.length > 0 ? (
-                dryWallData.files_received.files.map((file, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="text-sm font-medium text-gray-900">
-                          {file.name}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        file.type === 'csv' ? 'bg-green-100 text-green-800' : 
-                        file.type === 'json' ? 'bg-blue-100 text-blue-800' : 
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {file.type.toUpperCase()}
+      {/* Datos por Ubicación */}
+      {sensorData?.locations && Object.keys(sensorData.locations).length > 0 && (
+        <div className="bg-white p-4 rounded-lg shadow mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-3">📍 Monitoreo por Ubicación</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left p-2">Ubicación</th>
+                  <th className="text-left p-2">Lecturas</th>
+                  <th className="text-left p-2">Humedad Prom.</th>
+                  <th className="text-left p-2">Alertas</th>
+                  <th className="text-left p-2">Última Lectura</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(sensorData.locations).map(([location, data]) => (
+                  <tr key={location} className="border-b hover:bg-gray-50">
+                    <td className="p-2 font-medium">{location}</td>
+                    <td className="p-2">{data.readings_count}</td>
+                    <td className="p-2">
+                      <span className={`font-semibold ${data.avg_humidity > 70 ? 'text-red-600' : data.avg_humidity > 50 ? 'text-orange-600' : 'text-green-600'}`}>
+                        {data.avg_humidity}%
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {(file.size / 1024).toFixed(1)} KB
+                    <td className="p-2">
+                      {data.alert_count > 0 ? (
+                        <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">
+                          {data.alert_count}
+                        </span>
+                      ) : (
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                          OK
+                        </span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(file.modified).toLocaleString('es-ES')}
+                    <td className="p-2 text-xs text-gray-500">
+                      {new Date(data.last_reading).toLocaleString()}
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                    <div className="flex flex-col items-center">
-                      <div className="text-4xl mb-2">📡</div>
-                      <p>No se han recibido archivos del cliente DryWall</p>
-                      <p className="text-sm mt-1">Los archivos aparecerán automáticamente cuando se suban via SFTP</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Información Técnica */}
-      <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="text-md font-semibold text-blue-800 mb-2">Información de Integración</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <strong>Servidor SFTP:</strong> localhost:22<br/>
-            <strong>API REST:</strong> localhost:8000<br/>
-            <strong>Directorio Upload:</strong> {dryWallData?.drywall_integration?.upload_directory}
-          </div>
-          <div>
-            <strong>Cliente:</strong> DryWall Alert<br/>
-            <strong>Protocolo:</strong> SFTP + SSH Keys<br/>
-            <strong>Estado:</strong> <span className="text-green-600">✅ Operativo</span>
+      {/* Lecturas Recientes */}
+      {sensorData?.recent_readings && sensorData.recent_readings.length > 0 && (
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold text-gray-700 mb-3">🕒 Lecturas Más Recientes</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left p-2">Timestamp</th>
+                  <th className="text-left p-2">Sensor ID</th>
+                  <th className="text-left p-2">Ubicación</th>
+                  <th className="text-left p-2">Humedad</th>
+                  <th className="text-left p-2">Nivel de Alerta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sensorData.recent_readings.slice(0, 10).map((reading, index) => (
+                  <tr key={index} className="border-b hover:bg-gray-50">
+                    <td className="p-2 text-xs font-mono">
+                      {new Date(reading.timestamp).toLocaleString()}
+                    </td>
+                    <td className="p-2 font-medium text-blue-600">{reading.sensor_id}</td>
+                    <td className="p-2">{reading.location}</td>
+                    <td className="p-2">
+                      <span className={`font-semibold ${reading.humidity_percent > 70 ? 'text-red-600' : reading.humidity_percent > 50 ? 'text-orange-600' : 'text-green-600'}`}>
+                        {reading.humidity_percent}%
+                      </span>
+                    </td>
+                    <td className="p-2">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        reading.alert_level === 'HIGH' ? 'bg-red-100 text-red-800' :
+                        reading.alert_level === 'MEDIUM' ? 'bg-orange-100 text-orange-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {reading.alert_level}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
+      )}
+
+      {/* Footer con información del sistema */}
+      <div className="mt-6 text-center text-xs text-gray-500">
+        💼 Sistema Bancario - Monitoreo de Cliente DryWall Alert | 
+        🔄 Actualización automática cada 30 segundos |
+        🔐 Conexión segura vía SFTP
       </div>
     </div>
   );

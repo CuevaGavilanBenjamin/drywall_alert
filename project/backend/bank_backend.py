@@ -10,6 +10,7 @@ import threading
 import logging
 import json
 import time
+import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import paramiko
@@ -20,6 +21,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+
+# Agregar middleware adicional para debugging CORS
+from fastapi import Request
+from fastapi.responses import Response
 
 # Configuración de logging
 logging.basicConfig(
@@ -48,11 +53,23 @@ app = FastAPI(
 # Configurar CORS para permitir conexiones desde React
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # React dev server
+    allow_origins=["*"],  # Permitir todos los orígenes para desarrollo
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware adicional para debugging CORS
+@app.middleware("http")
+async def cors_debug_middleware(request: Request, call_next):
+    response = await call_next(request)
+    
+    # Agregar headers CORS adicionales manualmente
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    
+    return response
 
 class BankSFTPHandle(SFTPHandle):
     def stat(self):
@@ -349,6 +366,132 @@ async def list_drywall_files():
         logger.error(f"Error listing DryWall files: {e}")
         raise HTTPException(status_code=500, detail=f"Error listing files: {str(e)}")
 
+@app.get("/api/drywall/sensor-data")
+async def get_sensor_data():
+    """Procesar archivos CSV y extraer datos de sensores para el dashboard"""
+    try:
+        files = list(UPLOAD_ROOT.glob('*.csv'))
+        
+        all_sensor_data = []
+        
+        for file_path in files:
+            try:
+                # Leer CSV con pandas
+                df = pd.read_csv(file_path)
+                
+                # Convertir a formato JSON para la API
+                for _, row in df.iterrows():
+                    sensor_reading = {
+                        'timestamp': row['timestamp'],
+                        'sensor_id': row['sensor_id'],
+                        'sensor_type': row.get('sensor_type', 'Unknown'),
+                        'humidity_percent': float(row['humidity_percent']),
+                        'temperature_celsius': float(row['temperature_celsius']),
+                        'location': row['location'],
+                        'alert_level': row['alert_level'],
+                        'battery_level': float(row.get('battery_level', 0)),
+                        'signal_strength': int(row.get('signal_strength', 0)),
+                        'file_source': file_path.name
+                    }
+                    all_sensor_data.append(sensor_reading)
+                    
+            except Exception as e:
+                logger.error(f"Error processing file {file_path}: {e}")
+                continue
+        
+        # Ordenar por timestamp (más reciente primero)
+        all_sensor_data.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Estadísticas
+        if all_sensor_data:
+            high_alerts = [d for d in all_sensor_data if d['alert_level'] == 'HIGH']
+            avg_humidity = sum(d['humidity_percent'] for d in all_sensor_data) / len(all_sensor_data)
+            avg_temperature = sum(d['temperature_celsius'] for d in all_sensor_data) / len(all_sensor_data)
+            
+            unique_sensors = list(set(d['sensor_id'] for d in all_sensor_data))
+            unique_locations = list(set(d['location'] for d in all_sensor_data))
+        else:
+            high_alerts = []
+            avg_humidity = 0
+            avg_temperature = 0
+            unique_sensors = []
+            unique_locations = []
+        
+        return {
+            'timestamp': datetime.now().isoformat(),
+            'total_readings': len(all_sensor_data),
+            'sensor_data': all_sensor_data[:50],  # Últimas 50 lecturas
+            'statistics': {
+                'total_sensors': len(unique_sensors),
+                'total_locations': len(unique_locations),
+                'high_alerts_count': len(high_alerts),
+                'average_humidity': round(avg_humidity, 2),
+                'average_temperature': round(avg_temperature, 2),
+                'active_sensors': unique_sensors,
+                'monitored_locations': unique_locations
+            },
+            'alerts': high_alerts[:10]  # Últimas 10 alertas críticas
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting sensor data: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing sensor data: {str(e)}")
+
+@app.get("/api/drywall/sensor-summary")
+async def get_sensor_summary():
+    """Resumen ejecutivo para el dashboard bancario"""
+    try:
+        sensor_data_response = await get_sensor_data()
+        sensor_data = sensor_data_response['sensor_data']
+        stats = sensor_data_response['statistics']
+        
+        # Datos por ubicación
+        location_data = {}
+        for reading in sensor_data:
+            loc = reading['location']
+            if loc not in location_data:
+                location_data[loc] = {
+                    'readings_count': 0,
+                    'avg_humidity': 0,
+                    'avg_temperature': 0,
+                    'last_reading': None,
+                    'alert_count': 0
+                }
+            
+            location_data[loc]['readings_count'] += 1
+            location_data[loc]['avg_humidity'] += reading['humidity_percent']
+            location_data[loc]['avg_temperature'] += reading['temperature_celsius']
+            
+            if reading['alert_level'] == 'HIGH':
+                location_data[loc]['alert_count'] += 1
+            
+            if not location_data[loc]['last_reading'] or reading['timestamp'] > location_data[loc]['last_reading']:
+                location_data[loc]['last_reading'] = reading['timestamp']
+        
+        # Calcular promedios
+        for loc in location_data:
+            count = location_data[loc]['readings_count']
+            location_data[loc]['avg_humidity'] = round(location_data[loc]['avg_humidity'] / count, 1)
+            location_data[loc]['avg_temperature'] = round(location_data[loc]['avg_temperature'] / count, 1)
+        
+        return {
+            'timestamp': datetime.now().isoformat(),
+            'summary': {
+                'system_status': 'OPERATIONAL',
+                'total_sensors': stats['total_sensors'],
+                'total_readings': sensor_data_response['total_readings'],
+                'critical_alerts': stats['high_alerts_count'],
+                'average_humidity': stats['average_humidity'],
+                'average_temperature': stats['average_temperature']
+            },
+            'locations': location_data,
+            'recent_readings': sensor_data[:10]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting sensor summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting sensor summary: {str(e)}")
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -357,7 +500,7 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "services": {
             "api": "running",
-            "sftp": "running",
+            "sftp": "disabled",
             "react_frontend": "http://localhost:3000"
         }
     }
@@ -366,8 +509,9 @@ if __name__ == "__main__":
     logger.info("[BANK] Starting Bank System Backend...")
     logger.info(f"[BANK] Upload directory: {UPLOAD_ROOT.absolute()}")
     
-    # Iniciar servidor SFTP
-    start_sftp_server()
+    # Iniciar servidor SFTP - COMENTADO PARA APAGAR SFTP
+    start_sftp_server(port=2222)
+    logger.info("[BANK] SFTP Server DISABLED - Running API only")
     
     # Iniciar API REST
     uvicorn.run(

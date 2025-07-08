@@ -69,7 +69,7 @@ class StatusChecker:
             }
             return False
     
-    def check_sftp_connection(self, hostname, port=22, username='drywall_user', key_path='keys/drywall_key'):
+    def check_sftp_connection(self, hostname, port=2222, username='drywall_user', key_path='keys/drywall_key'):
         """Verifica conexión SFTP"""
         try:
             logger.info(f"[SFTP] Verificando conexión SFTP a {hostname}:{port}")
@@ -160,7 +160,7 @@ class StatusChecker:
             root_data = root_response.json()
             
             # Verificar estadísticas
-            stats_response = requests.get(f"{base_url}/stats", timeout=5)
+            stats_response = requests.get(f"{base_url}/api/drywall/status", timeout=5)
             stats_data = stats_response.json()
             
             logger.info(f"[OK] API ERP respondiendo correctamente")
@@ -315,7 +315,7 @@ Ejemplos:
     
     # Configuración del servidor
     parser.add_argument('--sftp-host', default='localhost', help='Servidor SFTP (default: localhost)')
-    parser.add_argument('--sftp-port', type=int, default=22, help='Puerto SFTP (default: 22)')
+    parser.add_argument('--sftp-port', type=int, default=2222, help='Puerto SFTP (default: 2222)')
     parser.add_argument('--sftp-user', default='drywall_user', help='Usuario SFTP')
     parser.add_argument('--sftp-key', default='keys/drywall_key', help='Clave privada SSH')
     

@@ -25,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class SFTPClient:
-    def __init__(self, hostname, port=22, username='drywall_user', key_path='keys/drywall_key'):
+    def __init__(self, hostname, port=2222, username='drywall_user', key_path='keys/drywall_key'):
         self.hostname = hostname
         self.port = port
         self.username = username
@@ -231,7 +231,7 @@ Ejemplos:
     
     # Configuración del servidor
     parser.add_argument('--host', default='localhost', help='Servidor SFTP (default: localhost)')
-    parser.add_argument('--port', type=int, default=22, help='Puerto SFTP (default: 22)')
+    parser.add_argument('--port', type=int, default=2222, help='Puerto SFTP (default: 2222)')
     parser.add_argument('--user', default='drywall_user', help='Usuario SFTP (default: drywall_user)')
     parser.add_argument('--key', default='keys/drywall_key', help='Clave privada SSH (default: keys/drywall_key)')
     parser.add_argument('--remote-dir', default='/upload', help='Directorio remoto (default: /upload)')
