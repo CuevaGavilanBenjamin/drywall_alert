@@ -1,0 +1,4 @@
+paramiko
+fastapi
+uvicorn[standard]
+python-multipart

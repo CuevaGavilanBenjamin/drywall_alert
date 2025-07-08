@@ -1,33 +1,113 @@
-name: Humidity Data Uploader
+name: DryWall Client - Upload to Bank
 
 on:
   schedule:
-    # Ejecutar cada hora
-    - cron: "0 * * * *"
+    # Ejecutar cada 10 minutos para demo
+    - cron: "*/10 * * * *"
   workflow_dispatch:
     # Permitir ejecución manual
   push:
     branches: [main, master]
-    paths:
-      - "drywall_client/**"
 
 jobs:
-  upload-humidity-data:
+  upload-to-bank:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
-          cd drywall_client
           python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Setup SSH key for bank connection
+        run: |
+          echo "${{ secrets.BANK_SSH_KEY }}" > bank_key
+          chmod 600 bank_key
+          
+      - name: Generate humidity data
+        run: |
+          timestamp=$(date +"%Y%m%d_%H%M")
+          python generate_humidity.py --format csv --num-records 50 --output "humedad_${timestamp}.csv"
+          echo "Generated file: humedad_${timestamp}.csv"
+          ls -la humedad_*.csv
+
+      - name: Upload to Bank SFTP
+        env:
+          BANK_HOST: ${{ secrets.BANK_HOST }}
+          BANK_PORT: ${{ secrets.BANK_PORT }}
+          BANK_USER: ${{ secrets.BANK_USER }}
+          REMOTE_DIR: ${{ secrets.BANK_REMOTE_DIR }}
+        run: |
+          timestamp=$(date +"%Y%m%d_%H%M")
+          echo "[CLIENT] Uploading to bank at $BANK_HOST:$BANK_PORT"
+          python sftp_upload.py \
+            --host "$BANK_HOST" \
+            --port "$BANK_PORT" \
+            --username "$BANK_USER" \
+            --key-file bank_key \
+            --local-file "humedad_${timestamp}.csv" \
+            --remote-path "$REMOTE_DIR"
+
+      - name: Verify upload via Bank API
+        env:
+          BANK_API_URL: ${{ secrets.BANK_API_URL }}
+        run: |
+          echo "[CLIENT] Checking bank status via API: $BANK_API_URL"
+          python check_status.py --api-only --api-url "$BANK_API_URL/api/drywall/status"
+
+      - name: Archive generated data
+        uses: actions/upload-artifact@v3
+        with:
+          name: humidity-data-sent-to-bank
+          path: humedad_*.csv
+          retention-days: 7
+
+  test-integration:
+    runs-on: ubuntu-latest
+    needs: upload-to-bank
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Test key generation
+        run: |
+          python generate_keys.py --key-size 2048 --name test_integration_key
+
+      - name: Test data generation
+        run: |
+          python generate_humidity.py --format json --num-records 5 --preview
+
+      - name: Integration test summary
+        env:
+          BANK_API_URL: ${{ secrets.BANK_API_URL }}
+        run: |
+          echo "=== INTEGRATION TEST SUMMARY ==="
+          echo "✅ Key generation: PASSED"
+          echo "✅ Data generation: PASSED" 
+          echo "✅ SFTP upload: PASSED (see upload-to-bank job)"
+          echo "✅ Bank API verification: PASSED (see upload-to-bank job)"
+          echo "🏦 Bank system: $BANK_API_URL"
+          echo "📊 Client repository: ${{ github.repository }}"
+          echo "=== EXTERNAL INTEGRATION SUCCESSFUL ==="
           pip install -r requirements.txt
 
       - name: Check system status

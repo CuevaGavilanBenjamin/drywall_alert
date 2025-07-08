@@ -1,0 +1,96 @@
+# ===================================
+# DRYWALL CLIENT - GITIGNORE  
+# ===================================
+
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# === ENTORNOS VIRTUALES ===
+venv/
+env/
+ENV/
+.venv/
+.env
+
+# === DATOS GENERADOS ===
+data/*.csv
+data/*.json
+data/humedad_*
+data/test_*
+*.csv
+*.json
+!data/.gitkeep
+
+# === CLAVES SSH GENERADAS ===
+keys/*.key
+keys/*_key
+keys/*.pem
+keys/*.ppk
+!keys/.gitkeep
+!keys/*.pub.example
+
+# PERO MANTENER CLAVES PÚBLICAS PARA EJEMPLOS
+!keys/*.pub
+
+# === LOGS ===
+*.log
+logs/
+*.log.*
+
+# === TEMPORAL ===
+.tmp/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# === IDE/EDITOR ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === CONFIGURACIÓN SENSIBLE ===
+config.env
+.env.local
+secrets.json
+
+# === TESTS ===
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# === BACKUPS ===
+*.bak
+*.backup
+backup/
+
+# ===================================
+# MANTENER ARCHIVOS NECESARIOS
+# ===================================
+# !data/.gitkeep
+# !keys/.gitkeep
