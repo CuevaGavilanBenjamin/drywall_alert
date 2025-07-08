@@ -1,9 +1,0 @@
-{
-  "cycle_timestamp": "2025-07-06T20:56:15.155339",
-  "original_file": "c:\\Users\\Benjamin\\OneDrive\\Escritorio\\PARTE2_FINAL_ANALITICA\\drywall_alert\\data\\humedad_20250706_205612.csv",
-  "transferred_file": "c:\\Users\\Benjamin\\OneDrive\\Escritorio\\PARTE2_FINAL_ANALITICA\\drywall_alert\\upload\\20250706_205612_humedad_20250706_205612.csv",
-  "records_processed": 15,
-  "bbva_erp_processed": true,
-  "fastapi_uploaded": true,
-  "status": "SUCCESS"
-}

@@ -1,0 +1,99 @@
+name: Humidity Data Uploader
+
+on:
+  schedule:
+    # Ejecutar cada hora
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    # Permitir ejecución manual
+  push:
+    branches: [main, master]
+    paths:
+      - "drywall_client/**"
+
+jobs:
+  upload-humidity-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          cd drywall_client
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check system status
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          ERP_API_URL: ${{ secrets.ERP_API_URL }}
+        run: |
+          cd drywall_client
+          python check_status.py --check-network --check-sftp --check-api
+
+      - name: Generate humidity data
+        run: |
+          cd drywall_client
+          python generate_humidity.py --format csv --samples 100 --output humidity_data.csv
+
+      - name: Upload data via SFTP
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_REMOTE_PATH: ${{ secrets.SFTP_REMOTE_PATH }}
+        run: |
+          cd drywall_client
+          python sftp_upload.py --host $SFTP_HOST --port $SFTP_PORT --username $SFTP_USERNAME --password $SFTP_PASSWORD --local-file humidity_data.csv --remote-path $SFTP_REMOTE_PATH
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: humidity-data
+          path: drywall_client/humidity_data.csv
+          retention-days: 7
+
+  test-scripts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          cd drywall_client
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Test key generation
+        run: |
+          cd drywall_client
+          python generate_keys.py --key-type rsa --key-size 2048 --output test_key
+
+      - name: Test humidity generation
+        run: |
+          cd drywall_client
+          python generate_humidity.py --format json --samples 10 --output test_humidity.json
+
+      - name: Verify generated files
+        run: |
+          cd drywall_client
+          ls -la test_key* test_humidity.json
+          head -n 5 test_humidity.json
