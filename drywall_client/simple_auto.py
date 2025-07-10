@@ -32,22 +32,39 @@ def auto_cycle():
     print("-" * 50)
     
     try:
-        # 1. Generar datos
+        # 1. Generar datos (PRIORIDAD: Arduino → Simulados)
         print("🔧 Generando datos de sensores...")
-        result = subprocess.run(
-            ["python", "generate_humidity.py"], 
-            capture_output=True, text=True, check=True
-        )
-        print("✅ Datos generados")
         
-        # Extraer nombre del archivo del output
-        output_lines = result.stdout.strip().split('\n')
-        csv_file = None
-        for line in output_lines:
-            if "[FILE] Archivo:" in line:
-                csv_file = line.split(": ")[1]
-                break
+        # Intentar Arduino primero
+        try:
+            from arduino_service import generate_arduino_data
+            arduino_result = generate_arduino_data()
+            print("✅ Datos de Arduino generados")
+            
+            # Procesar resultado de Arduino
+            output_lines = arduino_result['output_lines']
+            csv_file = arduino_result['filepath']
+            
+        except Exception as e:
+            print(f"⚠️  Arduino no disponible: {e}")
+            print("🔄 Usando datos simulados...")
+            
+            # Usar datos simulados
+            result = subprocess.run(
+                ["python", "generate_humidity.py"], 
+                capture_output=True, text=True, check=True
+            )
+            print("✅ Datos simulados generados")
+            
+            # Procesar resultado de simulación
+            output_lines = result.stdout.strip().split('\n')
+            csv_file = None
+            for line in output_lines:
+                if "[FILE] Archivo:" in line:
+                    csv_file = line.split(": ")[1]
+                    break
         
+        # 2. Validar archivo
         if not csv_file:
             print("❌ No se pudo identificar el archivo generado")
             return False
@@ -55,7 +72,7 @@ def auto_cycle():
         csv_path = Path(csv_file)
         print(f"📄 Archivo: {csv_path.name}")
         
-        # 2. Copiar al backend
+        # 3. Copiar al backend
         if not csv_path.exists():
             print(f"❌ Archivo no encontrado: {csv_path}")
             return False
@@ -65,7 +82,7 @@ def auto_cycle():
         shutil.copy2(csv_path, destination)
         print(f"✅ Copiado a: {destination}")
         
-        # 3. Estadísticas
+        # 4. Estadísticas
         for line in output_lines:
             if "[STATS]" in line:
                 print(f"📊 {line}")
